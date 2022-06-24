@@ -13,6 +13,7 @@ $(target):$(obj)
 
 .PHOINY:clean
 clean:
-	rm -rf *.o
-	rm -rf *.so
+	rm -f *.o
+	rm -f *.so
+	rm -f ${target}
 
