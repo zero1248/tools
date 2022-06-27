@@ -13,9 +13,9 @@ int main() {
 
 	int i;
 	cout << "------ASCII Code------" << endl;
-	cout << "| Dec | Hex | ASCII |" << endl; 
+	cout << "| Dec | Hex  | ASCII |" << endl; 
 	for(i=32; i<128; i++) {
-		printf("  %03d | %02x  |   %c\n", i, i, i);
+		printf("  %03d | 0x%02X |   %c\n", i, i, i);
 	}
 
 	return 0;
