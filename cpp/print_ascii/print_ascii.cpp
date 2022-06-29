@@ -13,9 +13,11 @@ int main() {
 
 	int i;
 	cout << "------ASCII Code------" << endl;
-	cout << "| Dec | Hex  | ASCII |   | Dec | Hex  | ASCII |" << endl; 
-	for(i=32; i<80; i++) {
-		printf("  %03d | 0x%02X |   %c         %03d | 0x%02X |   %c\n", i, i, i, i+48, i+48, i+48);
+	cout << "| Dec | Hex  | ASCII |   | Dec | Hex  | ASCII |   ";
+     	cout << "| Dec | Hex  | ASCII |   | Dec | Hex  | ASCII |" << endl; 
+	for(i=32; i<56; i++) {
+		printf("  %03d | 0x%02X |   %c         %03d | 0x%02X |   %c       ", i, i, i, i+24, i+24, i+24);
+		printf("  %03d | 0x%02X |   %c         %03d | 0x%02X |   %c\n", i+48, i+48, i+48, i+72, i+72, i+72);
 	}
 
 	return 0;
