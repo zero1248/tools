@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 Author: gaoy
 Date: 2022-06-20 05:08:03
