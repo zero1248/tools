@@ -43,7 +43,7 @@ int main() {
 	printf("\033[47m This background is white. \033[0m     : \\033[47m This text is white. \\033[0m \n");
 
     cout << endl << "\033[1m------ Foreground view and background view ------\033[0m" << endl;
-	printf("\033[35;44m This text is green with blue background. \033[0m : \\033[35;44m This text is green with blue background. \\033[0m \n");
+	printf("\033[32;44m This text is green with blue background. \033[0m : \\033[32;44m This text is green with blue background. \\033[0m \n");
 
     cout << endl;
 
