@@ -1,7 +1,7 @@
 src = $(wildcard *.c) $(wildcard *.cpp)
 obj = $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(src)))
 
-target = color
+target = pc
 CC = g++
 
 $(target):$(obj)

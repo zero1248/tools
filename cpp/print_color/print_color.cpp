@@ -1,7 +1,7 @@
 /*************************************************************************
-	> File Name: print_ascii.cpp
+	> File Name: print_color.cpp
 	> Author: Isaac
-	> Created Time: Mon 27 Jun 2022 04:44:51 PM CST
+	> Created Time: Sat 09 July 2022 23:34:51 PM CST
  ************************************************************************/
 
 #include <iostream>
@@ -18,7 +18,7 @@ int main() {
     printf("\033[1m High light/overstriking. \033[0m : \\033[1m High light/overstriking. \\033[0m \n");
     printf("\033[2m Dim. \033[0m                     : \\033[2m Dim. \\033[0m \n");
     printf("\033[4m Underline. \033[0m               : \\033[4m Underline. \\033[0m \n");
-    printf("\033[5m Blink. \033[0m                   : \\033[5m Blink. \\033[0m \n");
+    printf("\033[5m Blink. \0asc33[0m                   : \\033[5m Blink. \\033[0m \n");
     printf("\033[7m Reversal. \033[0m                : \\033[7m Reversal. \\033[0m \n");
     printf("\033[8m Hide. \033[0m                    : \\033[8m Hide. \\033[0m \n");
 
