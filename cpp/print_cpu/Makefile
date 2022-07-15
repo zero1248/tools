@@ -20,6 +20,7 @@ else
 	RM_OBJ_PATH = $(OBJ)/*.o
 endif
 
+CC = g++
 G++ = g++
 GCC = gcc
 
@@ -29,7 +30,7 @@ GCC = gcc
 CFLAGS = -g -Wall -I$(INC)
 
 $(TARGET_PATH):$(OBJS)
-	$(G++) $^ -o $@
+	$(CC) $^ -o $@
 
 $(OBJ)/%.o:$(SRC)/%.cpp
 	$(G++) $(CFLAGS) -c $< -o $@
