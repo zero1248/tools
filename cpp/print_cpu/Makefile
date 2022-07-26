@@ -7,7 +7,7 @@ SRCS = $(wildcard $(SRC)/*.c) $(wildcard $(SRC)/*.cpp)
 OBJS = $(patsubst %.c, $(OBJ)/%.o, $(patsubst %.cpp, $(OBJ)/%.o, $(notdir $(SRCS))))
 
 
-TARGET_NAME = main
+TARGET_NAME = prcpu
 TARGET_PATH = $(BIN)/$(TARGET_NAME)
 
 ifeq ($(OS), Windows_NT)
