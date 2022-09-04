@@ -1,7 +1,7 @@
 src = $(wildcard *.c) $(wildcard *.cpp)
 obj = $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(src)))
 
-target = sort
+target = read_cfg
 CC = g++
 
 $(target):$(obj)
