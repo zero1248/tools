@@ -1,4 +1,3 @@
-
 #include "get_dir_files.h"
 #include <iostream>
 #include <string>
@@ -43,7 +42,7 @@ extern void getAllFile(std::string filepath, std::vector<std::string>& files, st
         std::string str_ptrName = std::string(ptr->d_name);
         if (str_ptrName != "." && str_ptrName != ".."){
             int pos = str_ptrName.find(fileType);
-            if(pos != std::string::npos && pos == (str_ptrName.length() - 4))
+            if(pos != std::string::npos && pos == (str_ptrName.length() - fileType.length()))
                 files.push_back(ptr->d_name);
         }
     }
