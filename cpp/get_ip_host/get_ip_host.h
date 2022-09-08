@@ -1,10 +1,8 @@
-#ifndef GET_DIR_FILES_H
-#define GET_DIR_FILES_H
+#ifndef GET_IP_HOST_H
+#define GET_IP_HOST_H
 
-#include <string>
-#include <vector>
+class 
 
-extern void getAllFile(std::string filepath, std::vector<std::string>& files); 
-extern void getAllFile(std::string filepath, std::vector<std::string>& files, std::string fileType); 
 
-#endif // GET_DIR_FILES_H
+
+#endif // GET_IP_HOST_H
