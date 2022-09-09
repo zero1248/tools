@@ -48,7 +48,7 @@
 
 ### 8、read_config
 
-读取 config 文件，内容类似于：
+读取 config 文件（可以含空白符），内容类似于：
 
 para1 = abc
 
@@ -56,6 +56,20 @@ para2 = 123
 
 
 
-### 9、read_json
+### 9、rw_json
 
 读取 JSON 文件。
+
+
+
+### 10、get_dir_files
+
+获取指定目录下（不含子目录）的文件名或目录名。
+
+可以获取所有类型，也可以指定文件类型。
+
+
+
+### 11、get_ip_host
+
+获取本机的 IP 和 Hostname。
