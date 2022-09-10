@@ -1,0 +1,57 @@
+#!/bin/sh
+
+if [ $# -lt 1 ]; then
+	echo "File name is need!"
+	exit 1
+fi
+
+filename=$1
+FILENAME=$(echo $filename | tr 'a-z' 'A-Z')
+creator="Isaac"
+
+
+write_file_head(){
+    currTime=$(date +"%Y-%m-%d %T") 
+    echo "/************************************" >> $1
+    echo "/* FileName : $1" >> $1
+    echo "/* CreatTime: $currTime" >> $1
+    echo "/* Create by: $2" >> $1
+    echo "/************************************/" >> $1
+    echo "" >> $1
+}
+
+write_c_file(){
+	echo "#include <stdio.h>" >> $1.c
+	echo "#include \"$1.h\"" >> $1.c
+	echo "" >> $1.c
+	echo "int main(int argc, char* argv[]) {" >> $1.c
+	echo "" >> $1.c
+	echo "    return 0;" >> $1.c
+	echo "}" >> $1.c
+	echo "" >> $1.c
+}
+
+write_h_file(){
+	echo "#ifndef $2_H" >> $1.h
+	echo "#define $2_H" >> $1.h
+	echo "" >> $1.h
+	echo "" >> $1.h
+	echo "#endif // $2_H" >> $1.h
+	echo "" >> $1.h
+}
+
+
+if [ -e $filename.c ] || [ -e $filename.h ]; then
+	echo "File has exist!"
+	exit 1
+else
+	touch $filename.c
+	touch $filename.h
+fi
+
+write_file_head $filename.c $creator
+write_c_file $filename
+write_file_head $filename.h $creator
+write_h_file $filename $FILENAME
+
+exit 0

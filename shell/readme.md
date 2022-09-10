@@ -15,3 +15,21 @@
 3、inpath
 
 判断给定的第一个参数的文件是否在 PATH 路径列表中。
+
+
+
+4、gohome
+
+cd 到 某个特定的目录，这里因为用 windows 的 wsl 刚登录进来的目录不是 home，所以需要这样一个脚本。
+
+
+
+5、touchc
+
+创建 .c 和 .h 文件。
+
+
+
+6、touchcpp
+
+创建 .cpp 和 .h 文件。
