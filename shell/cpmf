@@ -1,0 +1,59 @@
+#!/bin/sh
+
+print_help(){
+    echo "Usage: cpmf {makefile_type} {dir}, the {dir} is optional, default is the current dir."
+    echo "Example: cpmf proj ./test   or   cpmf single"
+    echo "Makefile type is necessary! Select one of the following options:"
+    echo "proj   —— big c/cpp project"
+    echo "multi  —— compile multiple executables"
+    echo "single —— compile single executable"
+}
+
+mfType=$1
+dstPath=.
+
+if [ $# -lt 1 ]; then
+    print_help
+	exit 1
+fi
+
+if [ $# -eq 2 ]; then
+    dstPath=$2
+fi
+
+# Modify the path as needed
+mfScriptsPath=~/scripts/makefile
+
+validate_path(){
+    if [ ! -d $1 ] ; then
+        echo "The scripts path $1 is not exist, create it first please."
+        exit 1
+    fi
+}
+
+validate_path $mfScriptsPath
+
+case $mfType in
+    "single")
+        echo "Option signle:"
+        echo "Copy makefile from $mfScriptsPath/$mfType/makefile"
+        cp $mfScriptsPath/$mfType/makefile $dstPath       
+        ;;
+    "proj")
+        echo "option proj:"
+        echo "Copy makefile from $mfScriptsPath/$mfType/"
+        cp -r $mfScriptsPath/$mfType/* $dstPath
+        ;;
+    "multi")
+        echo "option multi:"
+        echo "Copy makefile from $mfScriptsPath/$mfType/makefile"
+        cp $mfScriptsPath/$mfType/makefile $dstPath      
+        ;;
+    *)
+        echo "error options! $mfType is not an valid option"
+        print_help
+        exit 1
+        ;;
+esac
+
+exit 0

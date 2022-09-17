@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [ $# -lt 1 ]; then
-	echo "File name is need!"
+	echo "File name is needed!"
 	exit 1
 fi
 
