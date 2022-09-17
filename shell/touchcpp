@@ -48,12 +48,15 @@ if [ -e $filename.cpp ] || [ -e $filename.h ]; then
 	exit 1
 else
 	touch $filename.cpp
-	touch $filename.h
+	if [ $filename != "main" ]; then
+		touch $filename.h
+	fi
 fi
 
 write_file_head $filename.cpp $creator
 write_cpp_file $filename
-write_file_head $filename.h $creator
-write_h_file $filename $FILENAME
-
+if [ $filename != "main" ]; then
+	write_file_head $filename.h $creator
+	write_h_file $filename $FILENAME
+fi
 exit 0
