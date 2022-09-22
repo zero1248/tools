@@ -22,7 +22,9 @@ write_file_head(){
 
 write_cpp_file(){
 	echo "#include <iostream>" >> $1.cpp
-	echo "#include \"$1.h\"" >> $1.cpp
+	if [ $1 != "main" ]; then
+		echo "#include \"$1.h\"" >> $1.cpp
+	fi
 	echo "" >> $1.cpp
 	echo "using namespace std;" >> $1.cpp
 	echo "" >> $1.cpp
