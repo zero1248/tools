@@ -5,7 +5,6 @@
 /************************************/
 
 #include <iostream>
-#include "vector_test.h"
 #include <vector>
 
 using namespace std;
@@ -54,7 +53,7 @@ int main(int argc, char* argv[]) {
     
     /*** 2、增加元素函数 ***/
 
-    cout << endl << endl << "*** Add: ***" << endl;
+    cout << endl << endl << "*** Add ***" << endl;
 
     // 向量尾部增加一个元素 
     for(int i=0; i<10; i++) {
@@ -84,7 +83,7 @@ int main(int argc, char* argv[]) {
 
     /*** 3、删除元素函数 ***/
 
-    cout << endl << endl << "*** Delete: ***" << endl;
+    cout << endl << endl << "*** Delete ***" << endl;
 
     // 删除向量中迭代器指向元素
     it = vec1.begin();
@@ -128,7 +127,10 @@ int main(int argc, char* argv[]) {
 
     /*** 4、遍历函数 ***/
 
-    cout << endl << endl << "*** Traverse: ***" << endl;
+    cout << endl << endl << "*** Traverse ***" << endl;
+
+    // at 可以获得编号位置的数据
+    cout << "data at 1 of vec1: " << vec1.at(1) << endl;
 
     // 利用数组脚标访问
     cout << VNAME(vec1) << ": ";
@@ -189,6 +191,8 @@ int main(int argc, char* argv[]) {
     b = 77;
     cout << VNAME(vec1) << ": ";
     cout_vec(vec1);
+
+
 
     // max_size 可以得到 vector 最大可以是多大
     cout << "max size of vector: " << vec1.max_size() << endl;
