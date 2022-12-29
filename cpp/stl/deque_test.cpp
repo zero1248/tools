@@ -2,7 +2,7 @@
  * @Author: gaoy
  * @Date: 2022-12-28 22:30:56
  * @LastEditors: gaoy
- * @LastEditTime: 2022-12-29 00:38:45
+ * @LastEditTime: 2022-12-30 00:57:06
  * @Description: file content
  */
 /************************************
@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
     cout << VNAME(deq5) << ": ";
     cout_deq(deq5);
 
-    /*** 2、增加元素函数 ***/
+    /*** 2、增删元素函数 ***/
 
     cout << endl << endl << "*** Modify ***" << endl;
 
