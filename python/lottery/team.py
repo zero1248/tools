@@ -11,19 +11,19 @@ import datetime
 
 name_list = [
     ['personA', 0.], 
-    ['personA', 0.], 
-    ['personA', 0.], 
-    ['personA', 0.],
-    ['personA', 0.], 
-    ['personA', 0.], 
-    ['personA', 0.], 
-    ['personA', 0.],
-    ['personA', 0.], 
-    ['personA', 0.], 
-    ['personA', 0.], 
-    ['personA', 0.],
-    ['personA', 0.], 
-    ['personA', 0.]
+    ['personB', 0.], 
+    ['personC', 0.], 
+    ['personD', 0.],
+    ['personE', 0.], 
+    ['personF', 0.], 
+    ['personG', 0.], 
+    ['personH', 0.],
+    ['personI', 0.], 
+    ['personJ', 0.], 
+    ['personK', 0.], 
+    ['personL', 0.],
+    ['personM', 0.], 
+    ['personN', 0.]
     ]
 
 print("生成随机数：")
