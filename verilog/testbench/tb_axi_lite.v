@@ -103,22 +103,38 @@ ali_dmod # (
 
 
         // 测试1: 写入数据到地址 h0000_0010
-        axi_write(32'h0000_0010, 32'h1234_5678, 4'b1111);
-
+        axi_write(32'h0000_0010, 32'h1111_1111, 4'b1111);
+        axi_write(32'h0000_0018, 32'h2222_2222, 4'b1111);
+        axi_write(32'h0000_0020, 32'h3333_3333, 4'b1111);
     
         // 测试2: 从地址 h0000_0010 读取数据
         axi_read(32'h0000_0010);
-
         // 检查读取~数据是否与写入一致
-        if (s_axi_control_rdata === 32'h1234_5678) begin
+        if (s_axi_control_rdata === 32'h1111_1111) begin
             $display("[PASS] 读数据匹配");
         end else begin
-            $display("[FAIL] 期望值 0x12345678, 实际值 0x%h", s_axi_control_rdata);
+            $display("[FAIL] 期望值 0x1111_1111, 实际值 0x%h", s_axi_control_rdata);
+        end
+
+        axi_read(32'h0000_0018);
+        // 检查读取~数据是否与写入一致
+        if (s_axi_control_rdata === 32'h2222_2222) begin
+            $display("[PASS] 读数据匹配");
+        end else begin
+            $display("[FAIL] 期望值 0x2222_2222, 实际值 0x%h", s_axi_control_rdata);
+        end
+
+        axi_read(32'h0000_0020);
+        // 检查读取~数据是否与写入一致
+        if (s_axi_control_rdata === 32'h3333_3333) begin
+            $display("[PASS] 读数据匹配");
+        end else begin
+            $display("[FAIL] 期望值 0x3333_3333, 实际值 0x%h", s_axi_control_rdata);
         end
 
 
 
-        #10000;
+        #100;
         $finish;
     end
 
@@ -165,7 +181,7 @@ ali_dmod # (
                 $display("[ERROR] 写入响应错误: 0x%h", s_axi_control_bresp);
             end
             else begin
-                $display("[SUCCESS] 数据写入成功"); 
+                $display("[SUCCESS] 数据 0x%h 写入地址 0x%h 成功", data, addr); 
             end
         end
     endtask
