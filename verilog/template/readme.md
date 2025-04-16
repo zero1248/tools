@@ -1,3 +1,24 @@
+1、template_tb.v
+
+testbench 模板，包括时钟、复位等。
+
+2、template_task.v
+
+task 模板。
+
+3、template_function.v
+
+function 模板。
+
+
+
+
+
+
+
+
+
+
 task 与 function 的区别：
 
 ​​Function​​：
