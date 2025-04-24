@@ -82,8 +82,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "Send failed: " << strerror(errno) << "\n";
     } 
     else {
-        std::cout << " Send " << sent << " bytes\n"
-                    << "from port " << local_port << std::endl;
+        std::cout << " Send " << sent << " bytes\n" << std::endl;
     }
     
     close(sockfd);   // release socket
