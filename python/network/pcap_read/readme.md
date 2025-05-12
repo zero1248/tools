@@ -1,1 +1,1 @@
-使用 scapy 库读取 wireshark 抓取网络包保存的 pcap 文件。
+使用 scapy 库读取 wireshark 抓取网络包保存的 pcap 文件，提取其中的数据。

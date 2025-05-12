@@ -62,4 +62,4 @@ print(i)
 # # 保存为 CSV（逗号分隔）
 # np.savetxt("int32_matrix.csv", matrix, fmt="%d", delimiter=",")
 # 保存为空格分隔的文本
-# np.savetxt("int32_matrix.txt", i, fmt="%d")
+np.savetxt("int32_matrix.txt", i, fmt="%d")
