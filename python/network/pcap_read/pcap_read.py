@@ -61,5 +61,13 @@ print(i)
 
 # # 保存为 CSV（逗号分隔）
 # np.savetxt("int32_matrix.csv", matrix, fmt="%d", delimiter=",")
-# 保存为空格分隔的文本
-np.savetxt("int32_matrix.txt", i, fmt="%d")
+# 保存 i 为空格分隔的文本
+np.savetxt("i_int32.txt", i, fmt="%d")
+
+mix_data = np.zeros((1024, idx))
+for k in range(idx):
+    spec_data = np.frombuffer(data_array[k], dtype = '<i8')
+    i[:, k] = spec_data[0:1024]   #! 从 0 开始，步长为 2，取 1024 个元素
+
+np.savetxt("qi_int64.txt", i, fmt="%ld")
+

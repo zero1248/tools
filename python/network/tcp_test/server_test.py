@@ -4,8 +4,8 @@ from socket import *
 from time import ctime
 
 HOST = ""
-PORT = 21567
-BUFSIZ = 1024
+PORT = 4096
+BUFSIZ = 4096
 ADDR = (HOST, PORT)
 
 
