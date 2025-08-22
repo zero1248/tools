@@ -69,5 +69,10 @@ int main() {
 	printf("%%04.5f: %4.5f      # the 0 in front does not work \n", ft);
 
 
+    char* ch = {"123\n223\n323\n423"};
+    printf("\n\033[7mchar: \033[0m\n");
+    printf("%%s    : %s          # all string\n", ch);
+    printf("%%.*s  : %.*s        # output 6 charactors without \\0\n", 6, ch);
+
 	return 0;
 }

@@ -17,6 +17,7 @@ reg  s_axi_control_awvalid;
 wire  s_axi_control_awready;
 reg [C_S_AXI_CONTROL_ADDR_WIDTH-1:0] s_axi_control_awaddr;
 
+// 读写 AXI BRAM Controller 时，必须加上 wlast 信号，才能收到 B 通道的 bvalid 信号
 reg  s_axi_control_wvalid;
 wire  s_axi_control_wready;
 reg [C_S_AXI_CONTROL_DATA_WIDTH-1:0] s_axi_control_wdata;
@@ -103,12 +104,12 @@ ali_dmod # (
 
 
         // 测试1: 写入数据到地址 h0000_0010
-        axi_write(32'h0000_0010, 32'h1111_1111, 4'b1111);
-        axi_write(32'h0000_0018, 32'h2222_2222, 4'b1111);
-        axi_write(32'h0000_0020, 32'h3333_3333, 4'b1111);
+        axi_write(12'h010, 32'h1111_1111, 4'b1111);
+        axi_write(12'h018, 32'h2222_2222, 4'b1111);
+        axi_write(12'h020, 32'h3333_3333, 4'b1111);
     
         // 测试2: 从地址 h0000_0010 读取数据
-        axi_read(32'h0000_0010);
+        axi_read(12'h010);
         // 检查读取~数据是否与写入一致
         if (s_axi_control_rdata === 32'h1111_1111) begin
             $display("[PASS] 读数据匹配");
@@ -116,7 +117,7 @@ ali_dmod # (
             $display("[FAIL] 期望值 0x1111_1111, 实际值 0x%h", s_axi_control_rdata);
         end
 
-        axi_read(32'h0000_0018);
+        axi_read(12'h018);
         // 检查读取~数据是否与写入一致
         if (s_axi_control_rdata === 32'h2222_2222) begin
             $display("[PASS] 读数据匹配");
@@ -124,7 +125,7 @@ ali_dmod # (
             $display("[FAIL] 期望值 0x2222_2222, 实际值 0x%h", s_axi_control_rdata);
         end
 
-        axi_read(32'h0000_0020);
+        axi_read(12'h020);
         // 检查读取~数据是否与写入一致
         if (s_axi_control_rdata === 32'h3333_3333) begin
             $display("[PASS] 读数据匹配");
@@ -142,7 +143,7 @@ ali_dmod # (
     // AXI-Lite 写入任务（封装 AW/W/B 通道操作）
     //--------------------------------------------------------------
     task axi_write;
-        input [31:0] addr;
+        input [11:0] addr;
         input [31:0] data;
         input [3:0]  strb;
         
@@ -191,7 +192,7 @@ ali_dmod # (
     // AXI-Lite 读取任务（封装 AR/R 通道操作）    
     //--------------------------------------------------------------
     task axi_read;
-        input [31: 0] addr;
+        input [11: 0] addr;
         begin
             // AR 通道发送地址
             @(posedge ap_clk);

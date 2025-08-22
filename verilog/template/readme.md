@@ -10,9 +10,11 @@ task 模板。
 
 function 模板。
 
+4、template_statemachine.v
 
+三段式状态机模板。
 
-
+todo: 区分一下摩尔型和米利型的写法。
 
 
 
