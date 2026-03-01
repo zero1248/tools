@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FSM Pro | 状态机设计专家</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --accent: #0f172a;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background: var(--accent);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+        .badge { background: var(--primary); font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; }
+
+        /* Main Layout */
+        main {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            grid-template-rows: 1fr 300px;
+            gap: 1rem;
+            padding: 1rem;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 0.75rem 1rem;
+            background: #f1f5f9;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.875rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Editor Section */
+        #input-area {
+            grid-row: 1 / 3;
+        }
+
+        textarea {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            resize: none;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            outline: none;
+            color: #334155;
+        }
+
+        /* Preview Section */
+        #preview-area {
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+        }
+
+        /* Code Section */
+        #code-area {
+            grid-column: 2;
+        }
+
+        pre {
+            margin: 0;
+            padding: 1rem;
+            flex: 1;
+            overflow: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+
+        .copy-btn {
+            cursor: pointer;
+            color: var(--primary);
+            font-size: 0.75rem;
+        }
+
+        .copy-btn:hover { text-decoration: underline; }
+
+        /* Mermaid Styling Overrides */
+        .mermaid { width: 100%; height: 100%; display: flex; justify-content: center; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>FSM <span style="font-weight: 300;">Hardware Designer</span></h1>
+    <div class="badge">Verilog RTL Engine Active</div>
+</header>
+
+<main>
+    <section class="panel" id="input-area">
+        <div class="panel-header">
+            <span>设计语言 (State -> Next [Cond])</span>
+            <span style="font-weight: 400; opacity: 0.6;">Reactive Editor</span>
+        </div>
+        <textarea id="fsm-input" placeholder="输入示例：&#10;IDLE -> START [en==1]&#10;START -> WORK [cnt>=8]&#10;WORK -> IDLE [done]&#10;WORK -> ERROR [err]"></textarea>
+    </section>
+
+    <section class="panel" id="preview-area">
+        <div class="panel-header">状态拓扑图预览</div>
+        <div id="mermaid-graph" class="mermaid">
+            stateDiagram-v2
+        </div>
+    </section>
+
+    <section class="panel" id="code-area">
+        <div class="panel-header">
+            <span>Verilog RTL 代码生成</span>
+            <span class="copy-btn" onclick="copyCode()">复制代码</span>
+        </div>
+        <pre id="verilog-output"></pre>
+    </section>
+</main>
+
+<script>
+    // 初始化 Mermaid
+    mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+
+    const inputEl = document.getElementById('fsm-input');
+    const graphEl = document.getElementById('mermaid-graph');
+    const codeEl = document.getElementById('verilog-output');
+
+    // 默认初始值
+    const defaultValue = "IDLE -> START [start_i]\nSTART -> DATA [en]\nDATA -> DATA [!done]\nDATA -> STOP [done]\nSTOP -> IDLE [1]";
+    inputEl.value = defaultValue;
+
+    function parseFSM(text) {
+        const lines = text.split('\n').filter(line => line.trim().includes('->'));
+        const transitions = [];
+        const states = new Set();
+
+        lines.forEach(line => {
+            const match = line.match(/(.+)->(.+?)(?:\[(.+)\])?$/);
+            if (match) {
+                const from = match[1].trim();
+                const to = match[2].trim();
+                const cond = match[3] ? match[3].trim() : "1'b1";
+                transitions.push({ from, to, cond });
+                states.add(from);
+                states.add(to);
+            }
+        });
+        return { transitions, states: Array.from(states) };
+    }
+
+    // 这里已修改为三段式状态机逻辑
+    function generateVerilog(data) {
+        if (data.states.length === 0) return "// 等待有效输入...";
+
+        const stateCount = data.states.length;
+        const width = Math.max(1, Math.ceil(Math.log2(stateCount)));
+        const firstState = data.states[0];
+        
+        let code = `// FSM Parameters\n`;
+        data.states.forEach((s, i) => {
+            code += `localparam ${s.padEnd(15)} = ${width}'d${i};\n`;
+        });
+
+        code += `\nreg [${width-1}:0] curr_state, next_state;\n\n`;
+
+        // 第一段：同步时序逻辑
+        code += `// 1st stage: State Register (Sequential)\nalways @(posedge clk or negedge rst_n) begin\n`;
+        code += `    if (!rst_n) curr_state <= ${firstState};\n`;
+        code += `    else        curr_state <= next_state;\nend\n\n`;
+
+        // 第二段：组合逻辑计算下一状态
+        code += `// 2nd stage: Next State Logic (Combinational)\nalways @(*) begin\n    case (curr_state)\n`;
+
+        data.states.forEach(state => {
+            code += `        ${state}: begin\n`;
+            const outgoing = data.transitions.filter(t => t.from === state);
+            
+            if (outgoing.length > 0) {
+                outgoing.forEach((t, index) => {
+                    const prefix = index === 0 ? "if" : "else if";
+                    code += `            ${prefix} (${t.cond}) next_state = ${t.to};\n`;
+                });
+                code += `            else next_state = ${state};\n`;
+            } else {
+                code += `            next_state = ${state};\n`;
+            }
+            code += `        end\n`;
+        });
+
+        code += `        default: next_state = ${firstState};\n    endcase\nend\n\n`;
+
+        // 第三段：输出逻辑（推荐使用同步输出以获得更好的时序）
+        code += `// 3rd stage: Output Logic (Registered recommended)\nalways @(posedge clk or negedge rst_n) begin\n`;
+        code += `    if (!rst_n) begin\n        // reset output signals\n    end else begin\n        case (next_state)\n`;
+        data.states.forEach(state => {
+            code += `            ${state.padEnd(10)}: begin /* drive outputs */ end\n`;
+        });
+        code += `            default: ; \n        endcase\n    end\nend`;
+
+        return code;
+    }
+
+    async function update() {
+        const text = inputEl.value;
+        const data = parseFSM(text);
+
+        // 更新绘图
+        let mermaidConfig = "stateDiagram-v2\n";
+        data.transitions.forEach(t => {
+            mermaidConfig += `    ${t.from} --> ${t.to}: ${t.cond}\n`;
+        });
+
+        try {
+            graphEl.removeAttribute('data-processed');
+            const { render } = mermaid;
+            const { svg } = await mermaid.render('mermaid-svg', mermaidConfig);
+            graphEl.innerHTML = svg;
+        } catch (e) {
+            console.error("Mermaid 渲染错误");
+        }
+
+        // 更新代码
+        codeEl.innerText = generateVerilog(data);
+    }
+
+    function copyCode() {
+        navigator.clipboard.writeText(codeEl.innerText);
+        alert("代码已复制到剪贴板");
+    }
+
+    inputEl.addEventListener('input', update);
+    window.onload = update;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>C Struct Padding Analyzer (Reverse View)</title>
+    <style>
+        :root {
+            --bg: #0b0f1a; --panel: #161b2d; --primary: #00d4ff;
+            --data: #22c55e; --pad: #ef4444; --text: #e2e8f0;
+        }
+        body { font-family: 'Segoe UI', system-ui; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { padding: 1rem 2rem; background: var(--panel); border-bottom: 1px solid #2d3748; display: flex; justify-content: space-between; align-items: center; }
+        main { display: grid; grid-template-columns: 400px 1fr; flex: 1; overflow: hidden; }
+        
+        .editor-area { padding: 20px; display: flex; flex-direction: column; border-right: 1px solid #2d3748; gap: 10px; }
+        textarea { flex: 1; background: #05070a; color: #00ffc3; border: 1px solid #334155; border-radius: 4px; padding: 12px; font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.4; outline: none; }
+        
+        .visual-area { padding: 20px; overflow-y: auto; }
+        .row-container { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+        .mem-row { display: grid; grid-template-columns: 80px repeat(8, 1fr); gap: 4px; align-items: center; }
+        .row-label { font-size: 12px; color: #64748b; font-family: monospace; }
+        
+        /* 关键：使用 grid-column 或 flex-direction 控制高位在左 */
+        .byte-box {
+            height: 50px; background: #1e293b; border-radius: 4px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 11px; border: 1px solid transparent; position: relative;
+        }
+        .byte-box.data { border-color: var(--data); background: rgba(34, 197, 94, 0.1); }
+        .byte-box.pad { border-color: var(--pad); background: rgba(239, 68, 68, 0.1); color: var(--pad); }
+        .byte-box .off { position: absolute; top: 2px; right: 4px; font-size: 9px; opacity: 0.4; }
+        .byte-box .name { font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 90%; text-align: center; }
+
+        .stat-card { background: var(--panel); padding: 15px; border-radius: 8px; display: flex; gap: 30px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
+        .stat-card b { color: var(--primary); font-size: 1.2rem; }
+        button { background: var(--primary); border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .header-ruler { display: grid; grid-template-columns: 80px repeat(8, 1fr); gap: 4px; margin-bottom: 5px; text-align: center; color: #64748b; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="font-weight: bold; font-size: 1.2rem;">Structure Memory Layout <span style="font-weight: normal; font-size: 0.8rem; opacity: 0.6;">(High Byte Left)</span></div>
+</header>
+
+<main>
+    <div class="editor-area">
+        <textarea id="input">struct SensorData {
+    uint16_t id;
+    uint32_t timestamp;
+    uint8_t  flags;
+    float    value;
+    uint8_t  buffer[3];
+};</textarea>
+        <button onclick="render()">Analyze Memory Map</button>
+    </div>
+
+    <div class="visual-area">
+        <div class="stat-card" id="stats">
+            <div>Size: <b id="totalSize">0</b> Bytes</div>
+            <div>Data: <b id="dataSize">0</b> Bytes</div>
+            <div>Padding: <b id="padSize">0</b> Bytes</div>
+        </div>
+
+        <div class="header-ruler">
+            <div>Offset</div>
+            <div>+7</div><div>+6</div><div>+5</div><div>+4</div><div>+3</div><div>+2</div><div>+1</div><div>+0</div>
+        </div>
+        <div id="layoutRoot" class="row-container"></div>
+    </div>
+</main>
+
+<script>
+const SIZES = { 
+        'char':1, 'uint8_t':1, 'int8_t':1, 'bool':1,
+        'short':2, 'uint16_t':2, 'int16_t':2, 
+        'int':4, 'uint32_t':4, 'int32_t':4, 'float':4, 
+        'double':8, 'uint64_t':8, 'int64_t':8, 'long':8 
+    };
+
+    function render() {
+        const code = document.getElementById('input').value;
+        const members = [];
+        let maxAlign = 1;
+        
+        // 1. 过滤掉 struct/union 定义行，只保留花括号内的内容
+        const bodyMatch = code.match(/\{([\s\S]*)\}/);
+        const content = bodyMatch ? bodyMatch[1] : code;
+
+        // 2. 改进正则：确保不匹配 struct/return 等关键字
+        const reg = /\b(?!(?:struct|union|unsigned|signed|volatile|const)\b)(?<type>\w+)\s+(?<name>\w+)(?:\[(?<arr>\d+)\])?/g;
+        
+        let match;
+        let actualDataSize = 0;
+
+        while ((match = reg.exec(content)) !== null) {
+            const type = match.groups.type;
+            const name = match.groups.name;
+            const arrLen = match.groups.arr ? parseInt(match.groups.arr) : 1;
+            
+            // 如果不在 SIZES 列表里，默认给 4 (假定为指针或其它 struct)
+            const unitSize = SIZES[type] || 4;
+            if (unitSize > maxAlign) maxAlign = unitSize;
+            
+            for(let i=0; i<arrLen; i++) {
+                members.push({ 
+                    name: arrLen > 1 ? `${name}[${i}]` : name, 
+                    size: unitSize,
+                    isFirst: i === 0
+                });
+                actualDataSize += unitSize;
+            }
+        }
+
+        if (members.length === 0) return;
+
+        let offset = 0;
+        let layout = [];
+        members.forEach(m => {
+            const pad = (m.size - (offset % m.size)) % m.size;
+            for(let i=0; i<pad; i++) layout.push({ type:'pad', off: offset++ });
+            for(let i=0; i<m.size; i++) layout.push({ type:'data', name: m.name, off: offset++, isStart: i===0 });
+        });
+        
+        const finalPad = (maxAlign - (offset % maxAlign)) % maxAlign;
+        for(let i=0; i<finalPad; i++) layout.push({ type:'pad', off: offset++ });
+
+        // 更新统计 (修复了 Data 统计为 0 的问题)
+        document.getElementById('totalSize').innerText = offset;
+        document.getElementById('dataSize').innerText = actualDataSize;
+        document.getElementById('padSize').innerText = offset - actualDataSize;
+        // 渲染逻辑
+        const root = document.getElementById('layoutRoot');
+        root.innerHTML = '';
+        
+        for (let i = 0; i < layout.length; i += 8) {
+            const row = document.createElement('div');
+            row.className = 'mem-row';
+            row.innerHTML = `<div class="row-label">Row ${Math.floor(i/8)}</div>`;
+            
+            // 重要：循环从 j=7 到 0，实现高字节在左，低字节在右
+            for (let j = 7; j >= 0; j--) {
+                const cellIdx = i + j;
+                const cell = document.createElement('div');
+                cell.className = 'byte-box';
+                
+                if (cellIdx < layout.length) {
+                    const item = layout[cellIdx];
+                    cell.classList.add(item.type);
+                    cell.innerHTML = `
+                        <div class="off">+${item.off}</div>
+                        <div class="name">${item.type==='data' ? (item.isStart ? item.name : '..') : 'PAD'}</div>
+                    `;
+                } else {
+                    cell.style.opacity = '0.1';
+                }
+                row.appendChild(cell);
+            }
+            root.appendChild(row);
+        }
+    }
+    render();
+</script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极简待办 - Modern Todo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --text-main: #2d3436;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-gradient);
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        h2 {
+            color: var(--text-main);
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 输入区域 */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            outline: none;
+            transition: 0.3s;
+            font-size: 16px;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
+        }
+
+        .add-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        /* 列表区域 */
+        ul {
+            list-style: none;
+        }
+
+        li {
+            background: #f8f9fa;
+            margin-bottom: 12px;
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            animation: slideIn 0.3s ease-out;
+            transition: 0.3s;
+        }
+
+        li.completed {
+            opacity: 0.6;
+            background: #edf2f7;
+        }
+
+        li.completed .todo-text {
+            text-decoration: line-through;
+            color: #718096;
+        }
+
+        .todo-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .todo-text {
+            font-size: 16px;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+
+        .delete-btn {
+            color: #ff7675;
+            cursor: pointer;
+            padding: 5px;
+            transition: 0.2s;
+            opacity: 0;
+        }
+
+        li:hover .delete-btn {
+            opacity: 1;
+        }
+
+        /* 底部统计 */
+        .stats {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #636e72;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 自定义复选框样式 */
+        .check-icon {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--primary-color);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: transparent;
+            font-size: 12px;
+        }
+
+        .completed .check-icon {
+            background: var(--primary-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2><i class="fas fa-tasks"></i> 极简待办</h2>
+    
+    <div class="input-group">
+        <input type="text" id="todoInput" placeholder="写下你的新目标..." onkeypress="if(event.keyCode==13) addTask()">
+        <button class="add-btn" onclick="addTask()">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+
+    <ul id="todoList">
+        </ul>
+
+    <div class="stats">
+        <span id="countText">总计: 0 项</span>
+        <span style="cursor: pointer; color: var(--primary-color);" onclick="clearAll()">清空全部</span>
+    </div>
+</div>
+
+<script>
+    let todos = JSON.parse(localStorage.getItem('myTodos')) || [];
+
+    function saveAndRender() {
+        localStorage.setItem('myTodos', JSON.stringify(todos));
+        render();
+    }
+
+    function addTask() {
+        const input = document.getElementById('todoInput');
+        const text = input.value.trim();
+        if (text) {
+            todos.push({ id: Date.now(), text: text, completed: false });
+            input.value = '';
+            saveAndRender();
+        }
+    }
+
+    function toggleTask(id) {
+        todos = todos.map(todo => 
+            todo.id === id ? { ...todo, completed: !todo.completed } : todo
+        );
+        saveAndRender();
+    }
+
+    function deleteTask(id) {
+        todos = todos.filter(todo => todo.id !== id);
+        saveAndRender();
+    }
+
+    function clearAll() {
+        if(confirm('确定要清空所有任务吗？')) {
+            todos = [];
+            saveAndRender();
+        }
+    }
+
+    function render() {
+        const list = document.getElementById('todoList');
+        const countText = document.getElementById('countText');
+        
+        list.innerHTML = todos.map(todo => `
+            <li class="${todo.completed ? 'completed' : ''}">
+                <div class="todo-content" onclick="toggleTask(${todo.id})">
+                    <div class="check-icon">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <span class="todo-text">${todo.text}</span>
+                </div>
+                <i class="fas fa-trash-alt delete-btn" onclick="deleteTask(${todo.id})"></i>
+            </li>
+        `).join('');
+
+        const activeCount = todos.filter(t => !t.completed).length;
+        countText.innerText = `待办: ${activeCount} / 总计: ${todos.length}`;
+    }
+
+    // 初始化渲染
+    render();
+</script>
+
+</body>
+</html>

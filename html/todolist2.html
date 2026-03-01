@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极简看板 Pro v3.3</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1; --success: #2ecc71; --warning: #ff9f43; --danger: #ee5253;
+            --bg: #f3f4f6; --card-bg: #ffffff; --text-main: #2d3436; --text-muted: #a0a0a0;
+        }
+
+        body { font-family: 'PingFang SC', system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; min-height: 100vh; padding: 40px 20px; }
+        .app-layout { display: grid; grid-template-columns: 340px 1fr; gap: 30px; max-width: 1200px; width: 100%; }
+        
+        /* 侧边栏 */
+        .sidebar { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 40px; height: fit-content; }
+        .card { background: var(--card-bg); border-radius: 20px; padding: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+
+        /* 日历 */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+        .day { padding: 8px 0; font-size: 13px; border-radius: 8px; cursor: pointer; position: relative; transition: 0.2s; }
+        .day:hover { background: #f1f5f9; }
+        .day.today { background: var(--primary); color: white; }
+        .day.has-task::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: var(--danger); border-radius: 50%; }
+        .day.selected { outline: 2px solid var(--primary); }
+
+        /* 统计与按钮 */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+        .stat-item { background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e5e7eb; }
+        .stat-value { display: block; font-size: 18px; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 11px; color: var(--text-muted); }
+        .btn-zone { margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .action-btn { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+        /* 主内容 */
+        .main-content { display: flex; flex-direction: column; gap: 20px; }
+        .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        input, select { padding: 12px; border: 1px solid #d1d5db; border-radius: 10px; outline: none; }
+        input:focus { border-color: var(--primary); }
+        .btn-add { background: var(--primary); color: white; border: none; border-radius: 10px; padding: 0 25px; cursor: pointer; font-weight: 600; }
+
+        /* --- 核心改进：解决左侧太空问题 --- */
+        .todo-item { 
+            background: white; 
+            padding: 15px 20px; 
+            border-radius: 16px; 
+            margin-bottom: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: flex-start; /* 强制靠左 */
+            border-left: 6px solid #eee; 
+            transition: 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        
+        /* 优先级颜色对齐 */
+        .p-high { border-left-color: var(--danger); }
+        .p-mid { border-left-color: var(--warning); }
+        .p-low { border-left-color: var(--success); }
+
+        .check-btn { 
+            width: 20px; 
+            height: 20px; 
+            cursor: pointer; 
+            margin: 0; 
+            margin-right: 20px; /* 控制复选框与文字的精确距离 */
+            flex-shrink: 0; 
+        }
+
+        .todo-info { 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
+            text-align: left; /* 强制文字靠左 */
+            flex: 1; 
+        }
+
+        .todo-title { 
+            font-weight: 600; 
+            font-size: 16px; 
+            color: var(--text-main); 
+            line-height: 1.4;
+        }
+
+        .todo-meta { 
+            font-size: 11px; 
+            color: var(--text-muted); 
+            margin-top: 4px; 
+        }
+
+        .delete-btn { 
+            color: #f1f1f1; 
+            cursor: pointer; 
+            padding: 10px;
+            transition: 0.2s;
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+        .todo-item:hover .delete-btn { color: #ff7675; }
+        .empty-state { text-align: center; padding: 50px; color: #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="app-layout">
+    <div class="sidebar">
+        <div class="card">
+            <div class="calendar-header">
+                <i class="fas fa-chevron-left" style="cursor:pointer" onclick="changeMonth(-1)"></i>
+                <h3 id="curMonth" style="margin:0; font-size:15px;"></h3>
+                <i class="fas fa-chevron-right" style="cursor:pointer" onclick="changeMonth(1)"></i>
+            </div>
+            <div class="days-grid" id="calendarGrid"></div>
+        </div>
+        <div class="card">
+            <h4 style="margin:0 0 15px 0; font-size:14px;">📊 统计看板</h4>
+            <div class="stats-grid">
+                <div class="stat-item"><span class="stat-value" id="s-total">0</span><span class="stat-label">全部记录</span></div>
+                <div class="stat-item"><span class="stat-value" id="s-today">0</span><span class="stat-label">今日待办</span></div>
+                <div class="stat-item"><span class="stat-value" id="s-week">0</span><span class="stat-label">本周新增</span></div>
+                <div class="stat-item"><span class="stat-value" id="s-month">0</span><span class="stat-label">本月新增</span></div>
+            </div>
+            <div class="btn-zone">
+                <button class="action-btn" onclick="exportData()"><i class="fas fa-download"></i> 导出备份</button>
+                <button class="action-btn" onclick="document.getElementById('fileInput').click()"><i class="fas fa-upload"></i> 导入数据</button>
+                <input type="file" id="fileInput" hidden accept=".json" onchange="importData(event)">
+                <button class="action-btn" style="color:var(--danger)" onclick="safeClear()"><i class="fas fa-trash-alt"></i> 清空存储</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="card">
+            <h3 style="margin:0 0 15px 0; font-size:18px;">✨ 待办事项</h3>
+            <div class="input-row">
+                <input type="text" id="tTitle" style="flex:1" placeholder="输入内容后按 Enter 直接添加..." onkeyup="handleKeyPress(event)">
+            </div>
+            <div class="input-row">
+                <select id="tPriority" style="width:150px;">
+                    <option value="p-mid">🟠 中优先级</option>
+                    <option value="p-high">🔴 紧急重要</option>
+                    <option value="p-low">🟢 低优先级</option>
+                </select>
+                <input type="date" id="tDate" style="width:180px;">
+                <button class="btn-add" onclick="addTask()">添加</button>
+            </div>
+        </div>
+        <div id="taskArea">
+            <h2 id="areaTitle" style="font-size:16px; margin-bottom:15px; color:#636e72; padding-left:5px;"></h2>
+            <ul style="list-style:none; padding:0; margin:0" id="list"></ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    let tasks = JSON.parse(localStorage.getItem('V3_TASKS')) || [];
+    let viewDate = new Date();
+    let selDate = new Date().toISOString().split('T')[0];
+
+    function init() {
+        document.getElementById('tDate').value = selDate;
+        updateUI();
+    }
+
+    function updateUI() {
+        localStorage.setItem('V3_TASKS', JSON.stringify(tasks));
+        renderCal();
+        renderTasks();
+        renderStats();
+    }
+
+    function handleKeyPress(e) { if (e.key === "Enter") addTask(); }
+
+    function renderCal() {
+        const grid = document.getElementById('calendarGrid'); grid.innerHTML = '';
+        const y = viewDate.getFullYear(), m = viewDate.getMonth();
+        document.getElementById('curMonth').innerText = `${y}年 ${m+1}月`;
+        ['日','一','二','三','四','五','六'].forEach(d => grid.innerHTML += `<div style="font-size:10px; color:#999; font-weight:bold">${d}</div>`);
+        const first = new Date(y, m, 1).getDay();
+        const days = new Date(y, m+1, 0).getDate();
+        for(let i=0; i<first; i++) grid.innerHTML += '<div></div>';
+        for(let d=1; d<=days; d++) {
+            const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const has = tasks.some(t => t.date === dStr);
+            grid.innerHTML += `<div class="day ${selDate===dStr?'selected':''} ${has?'has-task':''} ${dStr===new Date().toISOString().split('T')[0]?'today':''}" onclick="selectDate('${dStr}')">${d}</div>`;
+        }
+    }
+
+    function selectDate(d) { selDate = d; document.getElementById('tDate').value = d; updateUI(); }
+    function changeMonth(n) { viewDate.setMonth(viewDate.getMonth() + n); renderCal(); }
+
+    function addTask() {
+        const input = document.getElementById('tTitle');
+        const title = input.value.trim();
+        const pri = document.getElementById('tPriority').value;
+        let date = document.getElementById('tDate').value;
+        if(!title) return;
+        if(!date) date = new Date().toISOString().split('T')[0];
+        tasks.push({ id: Date.now(), title, pri, date, done: false });
+        input.value = ''; input.focus();
+        if(date !== selDate) selDate = date; 
+        updateUI();
+    }
+
+    function renderTasks() {
+        const list = document.getElementById('list');
+        document.getElementById('areaTitle').innerText = `📅 ${selDate} 的任务清单`;
+        const filtered = tasks.filter(t => t.date === selDate);
+        list.innerHTML = filtered.length ? filtered.sort((a,b)=>b.id-a.id).map(t => `
+            <li class="todo-item ${t.pri}">
+                <input type="checkbox" class="check-btn" ${t.done?'checked':''} onclick="toggle(${t.id})">
+                <div class="todo-info">
+                    <div class="todo-title" style="${t.done?'text-decoration:line-through;color:#b2bec3':''}">${t.title}</div>
+                    <div class="todo-meta">🕒 创建于 ${new Date(t.id).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                </div>
+                <i class="fas fa-trash-alt delete-btn" onclick="remove(${t.id})"></i>
+            </li>
+        `).join('') : '<div class="empty-state"><p>☕ 这一天还没有任务呢</p></div>';
+    }
+
+    function toggle(id) { tasks = tasks.map(t => t.id===id ? {...t, done: !t.done} : t); updateUI(); }
+    function remove(id) { tasks = tasks.filter(t => t.id!==id); updateUI(); }
+
+    function renderStats() {
+        const now = new Date();
+        const getCount = (d) => tasks.filter(t => new Date(t.date) >= new Date(now.getTime() - d*86400000)).length;
+        document.getElementById('s-total').innerText = tasks.length;
+        document.getElementById('s-today').innerText = tasks.filter(t => t.date === now.toISOString().split('T')[0]).length;
+        document.getElementById('s-week').innerText = getCount(7);
+        document.getElementById('s-month').innerText = getCount(30);
+    }
+
+    function exportData() {
+        const blob = new Blob([JSON.stringify(tasks, null, 2)], {type: "application/json"});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `Tasks_Backup.json`; a.click();
+    }
+
+    function importData(e) {
+        const reader = new FileReader();
+        reader.onload = (event) => { tasks = JSON.parse(event.target.result); updateUI(); alert("导入成功！"); };
+        reader.readAsText(e.target.files[0]);
+    }
+
+    function safeClear() {
+        const code = Math.floor(1000 + Math.random() * 9000);
+        if (prompt(`输入码 ${code} 确认清空：`) === code.toString()) { tasks = []; updateUI(); }
+    }
+    init();
+</script>
+</body>
+</html>

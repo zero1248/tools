@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单位换算器</title>
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --text: #2d3436;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .converter-card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        h2 { text-align: center; margin-bottom: 25px; color: var(--primary); }
+
+        .group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #edf2f7;
+            border-radius: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .swap-icon {
+            text-align: center;
+            font-size: 24px;
+            margin: 10px 0;
+            color: var(--primary);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .result-display {
+            margin-top: 25px;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            border-left: 5px solid var(--primary);
+            text-align: center;
+        }
+
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+
+<div class="converter-card">
+    <h2>⚖️ 单位换算器</h2>
+
+    <div class="group">
+        <label>换算类型</label>
+        <select id="type" onchange="updateUnits()">
+            <option value="length">长度 (Length)</option>
+            <option value="weight">重量 (Weight)</option>
+            <option value="area">面积 (Area)</option>
+            <option value="volume">体积 (Volume)</option>
+        </select>
+    </div>
+
+    <div class="group">
+        <label>数值</label>
+        <input type="number" id="inputValue" value="1" oninput="convert()">
+    </div>
+
+    <div class="group">
+        <label>从</label>
+        <select id="fromUnit" onchange="convert()"></select>
+    </div>
+
+    <div class="swap-icon" onclick="swapUnits()">⇄</div>
+
+    <div class="group">
+        <label>转换为</label>
+        <select id="toUnit" onchange="convert()"></select>
+    </div>
+
+    <div class="result-display">
+        <div id="resultLabel" style="font-size: 0.8rem; color: #636e72;">转换结果</div>
+        <div class="result-value" id="resultValue">---</div>
+    </div>
+</div>
+
+<script>
+    // 定义换算率（以各类型的基础单位为基准）
+    const data = {
+        length: {
+            base: 'meter',
+            units: {
+                '毫米 (mm)': 0.001, '厘米 (cm)': 0.01, '分米 (dm)': 0.1, 
+                '米 (m)': 1, '千米 (km)': 1000, '英寸 (in)': 0.0254, '英尺 (ft)': 0.3048
+            }
+        },
+        weight: {
+            base: 'gram',
+            units: {
+                '毫克 (mg)': 0.001, '克 (g)': 1, '千克 (kg)': 1000, 
+                '吨 (t)': 1000000, '磅 (lb)': 453.592, '盎司 (oz)': 28.3495
+            }
+        },
+        area: {
+            base: 'sq_meter',
+            units: {
+                '平方厘米': 0.0001, '平方米': 1, '平方公里': 1000000, 
+                '公顷': 10000, '亩': 666.667, '平方英尺': 0.0929
+            }
+        },
+        volume: {
+            base: 'liter',
+            units: {
+                '毫升 (ml)': 0.001, '升 (L)': 1, '立方米 (m³)': 1000, 
+                '加仑 (gal)': 3.78541, '品脱 (pt)': 0.473176
+            }
+        }
+    };
+
+    function updateUnits() {
+        const type = document.getElementById('type').value;
+        const fromSelect = document.getElementById('fromUnit');
+        const toSelect = document.getElementById('toUnit');
+        const units = Object.keys(data[type].units);
+
+        fromSelect.innerHTML = '';
+        toSelect.innerHTML = '';
+
+        units.forEach((unit, index) => {
+            fromSelect.options.add(new Option(unit, unit));
+            toSelect.options.add(new Option(unit, unit));
+        });
+
+        // 默认将第二个选项设为“转换为”的目标
+        if(units.length > 1) toSelect.selectedIndex = 1;
+        convert();
+    }
+
+    function convert() {
+        const type = document.getElementById('type').value;
+        const val = parseFloat(document.getElementById('inputValue').value);
+        const from = document.getElementById('fromUnit').value;
+        const to = document.getElementById('toUnit').value;
+
+        if (isNaN(val)) {
+            document.getElementById('resultValue').innerText = "请输入数字";
+            return;
+        }
+
+        // 转换逻辑：数值 * (源单位权重 / 目标单位权重)
+        const fromRate = data[type].units[from];
+        const toRate = data[type].units[to];
+        const result = val * (fromRate / toRate);
+
+        // 处理小数位，避免过长
+        const formattedResult = Number(result.toFixed(6)).toString();
+        document.getElementById('resultValue').innerText = `${formattedResult} ${to.split(' ')[0]}`;
+    }
+
+    function swapUnits() {
+        const from = document.getElementById('fromUnit');
+        const to = document.getElementById('toUnit');
+        const temp = from.selectedIndex;
+        from.selectedIndex = to.selectedIndex;
+        to.selectedIndex = temp;
+        convert();
+    }
+
+    // 初始化加载
+    updateUnits();
+</script>
+
+</body>
+</html>

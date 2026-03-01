@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Wave2Logic Ultra | 长时序测试生成器</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-color: #1e293b;
+            --accent-color: #38bdf8;
+            --text-color: #f1f5f9;
+            --border-color: #334155;
+            --wave-color: #4ade80;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-shrink: 0; }
+        
+        .main-layout { display: grid; grid-template-rows: 1fr 280px; gap: 20px; flex: 1; min-height: 0; }
+
+        /* 波形滚动区 */
+        .canvas-area { 
+            background: var(--panel-color); border-radius: 12px; border: 1px solid var(--border-color);
+            padding: 0 20px 20px 20px; overflow-x: auto; position: relative;
+        }
+
+        .ruler {
+            position: sticky; top: 0; height: 30px; background: var(--panel-color);
+            z-index: 10; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: flex-end; font-size: 10px; color: #64748b;
+        }
+
+        .sig-row { display: flex; align-items: center; margin-top: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 5px; width: fit-content; }
+        
+        .sig-name { 
+            width: 120px; font-family: monospace; font-weight: bold; color: var(--accent-color); 
+            position: sticky; left: 0; background: #1e293b; z-index: 5; padding-left: 10px;
+        }
+
+        .canvas-container { position: relative; }
+        
+        canvas { display: block; cursor: pointer; transition: filter 0.2s; }
+        canvas:hover { filter: brightness(1.2); }
+
+        .code-area { 
+            background: #000; border-radius: 12px; border: 1px solid var(--border-color);
+            display: flex; flex-direction: column; min-height: 0;
+        }
+
+        .code-header { padding: 10px 20px; background: #111; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+
+        pre { margin: 0; padding: 15px; font-family: 'Consolas', monospace; color: #a5f3fc; overflow-y: auto; flex: 1; font-size: 13px; line-height: 1.4; }
+
+        button { 
+            background: var(--accent-color); color: #000; border: none; padding: 8px 16px; 
+            border-radius: 6px; font-weight: bold; cursor: pointer;
+        }
+        .btn-group { display: flex; gap: 10px; align-items: center; }
+        input[type="number"] { background: #0f172a; border: 1px solid var(--border-color); color: white; padding: 5px; width: 60px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div style="font-size: 24px; font-weight: 900;">WAVE<span style="color:var(--accent-color)">2LOGIC</span></div>
+    <div class="btn-group">
+        <span style="font-size: 13px; opacity: 0.8;">步长(ns):</span>
+        <input type="number" id="timescale" value="10" onchange="updateCode()">
+        <button onclick="addSignal()">+ 新增信号</button>
+        <button onclick="copyCode()">复制代码</button>
+    </div>
+</div>
+
+<div class="main-layout">
+    <div class="canvas-area" id="scroll-wrapper">
+        <div id="ruler-bar" class="ruler"></div>
+        <div id="draw-zone">
+            </div>
+    </div>
+
+    <div class="code-area">
+        <div class="code-header">
+            <span style="font-size: 11px; color: #64748b;">AUTOGEN VERILOG</span>
+        </div>
+        <pre id="output-code"></pre>
+    </div>
+</div>
+
+<script>
+    const STEP_W = 30;    // 每格宽度（稍窄一点以容纳更多）
+    const MAX_STEPS = 100; // 扩展到100格
+    let signals = [
+        { name: 'rst_n', data: Array(MAX_STEPS).fill(1).map((v, i) => i < 3 ? 0 : 1) },
+        { name: 'valid', data: Array(MAX_STEPS).fill(0) },
+        { name: 'ready', data: Array(MAX_STEPS).fill(0) }
+    ];
+
+    function initRuler() {
+        const ruler = document.getElementById('ruler-bar');
+        ruler.style.width = (MAX_STEPS * STEP_W + 120) + 'px'; // 对齐 canvas
+        ruler.innerHTML = '<div style="width:120px"></div>'; // 信号名占位
+        for(let i=0; i<MAX_STEPS; i+=5) {
+            const mark = document.createElement('div');
+            mark.style.width = (STEP_W * 5) + 'px';
+            mark.style.borderLeft = '1px solid #475569';
+            mark.style.paddingLeft = '4px';
+            mark.innerText = (i * 10) + 'ns';
+            ruler.appendChild(mark);
+        }
+    }
+
+    function render() {
+        initRuler();
+        const zone = document.getElementById('draw-zone');
+        zone.innerHTML = '';
+        
+        signals.forEach((sig, sIdx) => {
+            const row = document.createElement('div');
+            row.className = 'sig-row';
+            
+            const nameLabel = document.createElement('div');
+            nameLabel.className = 'sig-name';
+            nameLabel.innerText = sig.name;
+
+            const container = document.createElement('div');
+            container.className = 'canvas-container';
+            
+            const cvs = document.createElement('canvas');
+            cvs.width = MAX_STEPS * STEP_W;
+            cvs.height = 50;
+
+            cvs.onclick = (e) => {
+                const stepIdx = Math.floor(e.offsetX / STEP_W);
+                if(stepIdx >= 0 && stepIdx < MAX_STEPS) {
+                    sig.data[stepIdx] = sig.data[stepIdx] === 0 ? 1 : 0;
+                    render();
+                    updateCode();
+                }
+            };
+
+            draw(cvs, sig.data);
+            container.appendChild(cvs);
+            row.appendChild(nameLabel);
+            row.appendChild(container);
+            zone.appendChild(row);
+        });
+    }
+
+    function draw(cvs, data) {
+        const ctx = cvs.getContext('2d');
+        const h = cvs.height;
+        
+        // 背景格
+        ctx.strokeStyle = '#1e293b';
+        for(let i=0; i<=MAX_STEPS; i++) {
+            ctx.beginPath(); ctx.moveTo(i * STEP_W, 0); ctx.lineTo(i * STEP_W, h); ctx.stroke();
+        }
+
+        // 波形
+        ctx.strokeStyle = '#4ade80';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        let lastY = data[0] === 1 ? 10 : 40;
+        ctx.moveTo(0, lastY);
+
+        for(let i=0; i<MAX_STEPS; i++) {
+            const curY = data[i] === 1 ? 10 : 40;
+            ctx.lineTo(i * STEP_W, curY);
+            ctx.lineTo((i + 1) * STEP_W, curY);
+        }
+        ctx.stroke();
+
+        // 渐变填充
+        ctx.fillStyle = 'rgba(74, 222, 128, 0.05)';
+        ctx.lineTo(MAX_STEPS * STEP_W, h); ctx.lineTo(0, h); ctx.fill();
+    }
+
+    function updateCode() {
+        const ts = parseInt(document.getElementById('timescale').value) || 10;
+        let code = `// Wave2Logic Pro Generated\n// Total Duration: ${MAX_STEPS * ts}ns\n\n`;
+        code += `initial begin\n`;
+        
+        // Initial values
+        signals.forEach(s => code += `  ${s.name.padEnd(12)} = ${s.data[0]};\n`);
+        
+        let lastTime = 0;
+        for(let t=1; t<MAX_STEPS; t++) {
+            let changes = [];
+            signals.forEach(s => {
+                if(s.data[t] !== s.data[t-1]) changes.push(`${s.name} = ${s.data[t]};`);
+            });
+
+            if(changes.length > 0) {
+                const delay = (t - lastTime) * ts;
+                code += `  #${delay.toString().padEnd(5)} ${changes.join(' ')}\n`;
+                lastTime = t;
+            }
+        }
+        
+        code += `  #${ts * 10} $display("Simulation Finished");\n  $finish;\nend`;
+        document.getElementById('output-code').innerText = code;
+    }
+
+    function addSignal() {
+        const n = prompt("信号名称:");
+        if(n) { 
+            signals.push({name: n, data: Array(MAX_STEPS).fill(0)}); 
+            render(); updateCode(); 
+        }
+    }
+
+    async function copyCode() {
+        await navigator.clipboard.writeText(document.getElementById('output-code').innerText);
+        const btn = document.querySelector('button[onclick="copyCode()"]');
+        btn.innerText = "已复制！";
+        setTimeout(() => btn.innerText = "复制代码", 1000);
+    }
+
+    window.onload = () => { render(); updateCode(); };
+</script>
+</body>
+</html>

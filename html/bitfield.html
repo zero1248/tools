@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitfield Pro | 紧凑型五组分析仪</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg: #0b0f1a;
+            --card: #1e293b;
+            --text: #e2e8f0;
+            --accent: #22d3ee;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 10px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px; /* 进一步压缩面板间距 */
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        h2 { 
+            font-family: "SimHei", "Microsoft YaHei", sans-serif; /* 优先使用黑体，备选微软雅黑 */
+            font-weight: 900;           /* 黑体通常比较厚重，可以用较大的字重 */
+            letter-spacing: 4px; 
+            margin: 5px 0; 
+            font-size: 1.8rem; 
+            color: #94a3b8;
+        }
+
+        .panel {
+            width: 100%;
+            max-width: 1450px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 16px; /* 压缩垂直内边距 */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        .panel-title {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.15);
+            padding: 2px 8px;
+            border-radius: 4px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        input {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 4px;
+            padding: 4px 10px;
+            color: var(--accent);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .hex-in { width: 130px; font-weight: bold; text-align: center; }
+        .struct-in { flex-grow: 1; font-size: 0.8rem; color: #94a3b8; }
+        .dec-val { font-size: 0.85rem; color: #64748b; min-width: 180px; text-align: right; }
+
+        /* 位网格：矮化设计 */
+        .bit-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 2px;
+            margin: 4px 0;
+        }
+
+        .bit-cell {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 28px;
+        }
+
+        .bit-btn {
+            width: 100%;
+            height: 48px; /* 高度从 48px 压缩到 28px */
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: #475569;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-bottom: 3px solid transparent; /* 颜色条变细 */
+            border-radius: 3px;
+            transition: all 0.1s;
+        }
+
+        .bit-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* 字节分割线 */
+        .bit-cell:nth-child(8n):not(:last-child) {
+            margin-right: 14px;
+            position: relative;
+        }
+        .bit-cell:nth-child(8n):not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 20%;
+            height: 60%;
+            width: 1px;
+            background: #475569;
+        }
+
+        .bit-idx {
+            font-size: 0.8rem;
+            color: #55667a;
+            margin-top: 4px;
+        }
+
+        .legend-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .field-tag {
+            font-size: 1.1rem;      /* 核心：将字体从原来的 0.75rem 调大 */
+            font-weight: 500;       /* 增加一点粗细，让字更醒目 */
+            padding: 4px 12px;      /* 增加内边距，让标签更宽大、透气 */
+            background: rgba(0,0,0,0.25); /* 稍微加深背景色，增强对比度 */
+            border-radius: 6px;     /* 圆角稍微调圆润一点 */
+            display: flex;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.08); /* 边缘加一个极细的线，增加高级感 */
+        }
+
+        .color-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            margin-right: 6px;
+        }
+
+        .val-hl { color: #fff; font-weight: bold; margin-left: 4px; }
+
+    </style>
+</head>
+<body>
+
+    <h2>位域可视化构造器</h2>
+
+    <div id="main-container" style="width: 100%; display: flex; flex-direction: column; gap: 16px; align-items: center;">
+        </div>
+
+    <script>
+        const colors = ['#22d3ee', '#fbbf24', '#f87171', '#c084fc', '#4ade80', '#6366f1', '#ec4899'];
+        const slots = [
+            { id: 'A', hex: '0x00000000', struct: 'Type:31:28 Flags:27:24 Payload:23:0' },
+            { id: 'B', hex: '0xFFADBEEF', struct: 'Sign:31:31 Expo:30:23 Frac:22:0' },
+            { id: 'C', hex: '0x12345678', struct: 'Ver:31:28 Len:27:16 ID:15:0' },
+            { id: 'D', hex: '0x0000FFFF', struct: 'High:31:16 Low:15:0' },
+            { id: 'E', hex: '0x80000000', struct: 'MSB:31:31 Others:30:0' }
+        ];
+
+        const container = document.getElementById('main-container');
+
+        slots.forEach(slot => {
+            const panel = document.createElement('div');
+            panel.className = 'panel';
+            panel.innerHTML = `
+                <div class="header-row">
+                    <div class="panel-title">SLOT ${slot.id}</div>
+                    <input type="text" class="hex-in" id="hex-${slot.id}" value="${slot.hex}" spellcheck="false">
+                    <input type="text" class="struct-in" id="struct-${slot.id}" value="${slot.struct}">
+                    <div id="dec-${slot.id}" class="dec-val">DEC: 0</div>
+                </div>
+                <div class="bit-container" id="grid-${slot.id}"></div>
+                <div class="legend-area" id="legend-${slot.id}"></div>
+            `;
+            container.appendChild(panel);
+            initPanelLogic(slot.id);
+        });
+
+        function initPanelLogic(id) {
+            const grid = document.getElementById(`grid-${id}`);
+            const hexIn = document.getElementById(`hex-${id}`);
+            const structIn = document.getElementById( `struct-${id}`);
+            const legend = document.getElementById(`legend-${id}`);
+            const decDisplay = document.getElementById(`dec-${id}`);
+
+            let val = 0n;
+            try { val = BigInt(hexIn.value); } catch(e) {}
+
+            for (let i = 31; i >= 0; i--) {
+                const cell = document.createElement('div');
+                cell.className = 'bit-cell';
+                cell.innerHTML = `
+                    <button class="bit-btn" id="btn-${id}-${i}">0</button>
+                    <span class="bit-idx">${i}</span>
+                `;
+                cell.querySelector('button').onclick = () => {
+                    val ^= (1n << BigInt(i));
+                    update();
+                };
+                grid.appendChild(cell);
+            }
+
+            function update(fromInput = false) {
+                if (!fromInput) {
+                    hexIn.value = '0x' + val.toString(16).toUpperCase().padStart(8, '0');
+                }
+                decDisplay.textContent = `DEC: ${val.toLocaleString()}`;
+
+                for (let i = 0; i < 32; i++) {
+                    const btn = document.getElementById(`btn-${id}-${i}`);
+                    const bit = (val >> BigInt(i)) & 1n;
+                    btn.textContent = bit;
+                    btn.className = bit ? 'bit-btn active' : 'bit-btn';
+                    btn.style.borderBottomColor = 'transparent';
+                }
+
+                legend.innerHTML = '';
+                const defs = structIn.value.trim().split(/\s+/);
+                defs.forEach((def, idx) => {
+                    const parts = def.split(':');
+                    if (parts.length === 3) {
+                        const [name, end, start] = [parts[0], parseInt(parts[1]), parseInt(parts[2])];
+                        if (!isNaN(start) && !isNaN(end) && start <= end && end < 32) {
+                            const color = colors[idx % colors.length];
+                            const mask = (1n << BigInt(end - start + 1)) - 1n;
+                            const fieldVal = (val >> BigInt(start)) & mask;
+
+                            for (let i = start; i <= end; i++) {
+                                const b = document.getElementById(`btn-${id}-${i}`);
+                                if (b) b.style.borderBottomColor = color;
+                            }
+
+                            const tag = document.createElement('div');
+                            tag.className = 'field-tag';
+                            tag.innerHTML = `<span class="color-dot" style="background:${color}"></span><strong>${name}</strong>:<span class="val-hl">0x${fieldVal.toString(16).toUpperCase()}</span>`;
+                            legend.appendChild(tag);
+                        }
+                    }
+                });
+            }
+
+            hexIn.oninput = (e) => {
+                let s = e.target.value;
+                if(!s.startsWith('0x')) s = '0x' + s;
+                try { val = BigInt(s); update(true); } catch(err) {}
+            };
+            structIn.oninput = () => update();
+            update();
+        }
+    </script>
+</body>
+</html>

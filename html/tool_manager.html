@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的工具箱控制台</title>
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --primary-color: #3498db;
+            --bg-color: #f8f9fa;
+        }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
+        
+        /* 布局容器 */
+        .container { display: flex; height: 100vh; }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        .sidebar-header { padding: 20px; border-bottom: 1px solid #3e4f5f; }
+        .search-box {
+            width: 100%; padding: 8px; border-radius: 4px; border: none;
+            background: #3e4f5f; color: white; box-sizing: border-box;
+        }
+
+        /* 工具列表 */
+        .tool-list { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .tool-item {
+            padding: 12px 20px; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; border-left: 4px solid transparent;
+        }
+        .tool-item:hover { background: #3e4f5f; }
+        .tool-item.active { background: #34495e; border-left-color: var(--primary-color); }
+
+        /* 主显示区 */
+        .main-content { flex: 1; background: var(--bg-color); display: flex; flex-direction: column; }
+        iframe { width: 100%; height: 100%; border: none; background: white; }
+        
+        .empty-state {
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; height: 100%; color: #95a5a6;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h3>🧰 我的工具箱</h3>
+            <input type="text" class="search-box" id="search" placeholder="搜索工具...">
+        </div>
+        <div class="tool-list" id="toolList">
+            </div>
+    </aside>
+
+    <main class="main-content">
+        <div id="welcome" class="empty-state">
+            <h2>请从左侧选择一个工具</h2>
+            <p>点击即可在当前窗口运行</p>
+        </div>
+        <iframe id="toolViewer" style="display: none;"></iframe>
+    </main>
+</div>
+
+<script>
+    // --- 配置区：在此处添加你的 HTML 文件名 ---
+    const tools = [
+    { name: "字数统计", file: "wordcount.html", icon: "📝" },
+    { name: "计算器", file: "calculator.html", icon: "🔢" },
+    { name: "待办事项", file: "todolist.html", icon: "✅" },
+    { name: "待办事项 pro", file: "todolist2.html", icon: "📅" },
+    { name: "位域可视化构造器", file: "bitfield.html", icon: "🎆" },
+    { name: "C 结构体 Padding 分析器", file: "c_struct_analyzer.html", icon: "✈️" },
+    { name: "Testbench 生成器", file: "tb_gen.html", icon: "🗝" },
+    { name: "ASCII 框图画板", file: "ascii_painter.html", icon: "🖼" },
+    { name: "FSM代码生成器", file: "fsm_gen.html", icon: "⚙️" },
+    { name: "定点数转换器", file: "ap_int_cvt.html", icon: "🖇" },
+    { name: "单位换算", file: "unit_convert.html", icon: "⚖️" }
+        // { name: "时钟", file: "clock.html", icon: "⏰" }
+    ];
+
+    const toolListEl = document.getElementById('toolList');
+    const iframe = document.getElementById('toolViewer');
+    const welcome = document.getElementById('welcome');
+    const searchInput = document.getElementById('search');
+
+    // 渲染列表
+    function renderList(filter = '') {
+        toolListEl.innerHTML = '';
+        tools.filter(t => t.name.includes(filter)).forEach(tool => {
+            const div = document.createElement('div');
+            div.className = 'tool-item';
+            div.innerHTML = `<span style="margin-right:10px">${tool.icon}</span> ${tool.name}`;
+            div.onclick = () => loadTool(tool, div);
+            toolListEl.appendChild(div);
+        });
+    }
+
+    // 加载工具
+    function loadTool(tool, element) {
+        // 更新 UI 状态
+        document.querySelectorAll('.tool-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+        
+        // 切换显示
+        welcome.style.display = 'none';
+        iframe.style.display = 'block';
+        iframe.src = tool.file;
+    }
+
+    // 搜索监听
+    searchInput.oninput = (e) => renderList(e.target.value);
+
+    // 初始化
+    renderList();
+</script>
+
+</body>
+</html>
+
