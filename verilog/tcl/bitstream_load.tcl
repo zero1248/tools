@@ -23,7 +23,6 @@ if { ![file exists $bit_file] } {
     puts "✅ Bitstream file exists: $bit_file"
 }
 
-
 # -----------------------------
 # 打开硬件
 # -----------------------------
@@ -45,7 +44,6 @@ set hw_device [lindex $hw_devices 0]
 # 选中 FPGA 设备
 current_hw_device $hw_device
 puts "✅ Found device: $hw_device"
-
 
 # -----------------------------
 # 设置 bitstream 并下载
