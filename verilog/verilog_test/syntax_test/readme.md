@@ -1,0 +1,1 @@
+tb_dynamic_slice 用于测试 verilog 的动态切片语法。
