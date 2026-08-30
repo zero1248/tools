@@ -60,4 +60,11 @@ tb_dynamic_slice
 
 测试动态切片语法。
 
+---
+
+tb_delay
+
+测试在 testbench 中延时用 # 和 @(posedge clk) 的区别。
+
+使用一个简单的半加器 adder4b_half 作为测试模块。
 
